@@ -8,7 +8,8 @@ use std::path::{Path, PathBuf};
 #[serde(deny_unknown_fields)]
 pub struct AppConfig {
     pub history_file: Option<PathBuf>,
-    pub backup_dir: Option<PathBuf>,
+    pub auto_backup_dir: Option<PathBuf>,
+    pub manual_backup_dir: Option<PathBuf>,
 }
 
 impl AppConfig {

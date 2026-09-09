@@ -3,13 +3,13 @@ use anyhow::{Context, Result, bail};
 use std::env;
 use std::fs::{self, Permissions};
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Component, Path, PathBuf};
+use std::path::{Path, PathBuf};
 
 pub struct AppPaths {
     pub history_file: PathBuf,
     pub state_dir: PathBuf,
-    pub backups_dir: PathBuf,
-    pub exports_dir: PathBuf,
+    pub auto_backups_dir: PathBuf,
+    pub manual_backups_dir: PathBuf,
     pub log_file: PathBuf,
 }
 
@@ -42,29 +42,43 @@ impl AppPaths {
             Some(path) => resolve_configured_path(&path, &home_dir, "history_file")?,
             None => home_dir.join(".zsh_history"),
         };
-        let backups_dir = match config.backup_dir {
-            Some(path) => resolve_backup_dir(&path, &home_dir, &state_dir)?,
-            None => state_dir.join("backups"),
+        let auto_backups_dir = match config.auto_backup_dir {
+            Some(path) => resolve_configured_path(&path, &home_dir, "auto_backup_dir")?,
+            None => home_dir.join("zsh/backup/auto"),
+        };
+        let manual_backups_dir = match config.manual_backup_dir {
+            Some(path) => resolve_configured_path(&path, &home_dir, "manual_backup_dir")?,
+            None => home_dir.join("zsh/backup/manual"),
         };
 
         Ok(Self {
             history_file,
             state_dir: state_dir.clone(),
-            backups_dir,
-            exports_dir: state_dir.join("exports"),
+            auto_backups_dir,
+            manual_backups_dir,
             log_file: state_dir.join("logs/backup.log"),
         })
     }
 
-    pub fn ensure_layout(&self) -> Result<()> {
+    pub fn ensure_state_layout(&self) -> Result<()> {
         ensure_private_directory(&self.state_dir)?;
-        ensure_private_directory(&self.backups_dir)?;
-        ensure_private_directory(&self.exports_dir)?;
         let logs_dir = self
             .log_file
             .parent()
             .context("log path has no parent directory")?;
         ensure_private_directory(logs_dir)
+    }
+
+    pub fn backup_dir(&self, automatic: bool) -> &Path {
+        if automatic {
+            &self.auto_backups_dir
+        } else {
+            &self.manual_backups_dir
+        }
+    }
+
+    pub fn ensure_backup_layout(&self, automatic: bool) -> Result<()> {
+        ensure_private_directory(self.backup_dir(automatic))
     }
 }
 
@@ -79,27 +93,6 @@ fn resolve_configured_path(path: &Path, home_dir: &Path, field: &str) -> Result<
     if !resolved.is_absolute() {
         bail!("config field {field} must be an absolute path or start with ~/");
     }
-    Ok(resolved)
-}
-
-fn resolve_backup_dir(path: &Path, home_dir: &Path, state_dir: &Path) -> Result<PathBuf> {
-    if path.as_os_str().is_empty() || path.components().any(|part| part == Component::ParentDir) {
-        bail!("config field backup_dir cannot be empty or contain ..");
-    }
-
-    let resolved = if path.is_absolute() || path.starts_with("~") {
-        resolve_configured_path(path, home_dir, "backup_dir")?
-    } else {
-        state_dir.join(path)
-    };
-
-    if !resolved.starts_with(state_dir) {
-        bail!(
-            "config field backup_dir must stay inside {}; use a relative path such as backups",
-            state_dir.display()
-        );
-    }
-
     Ok(resolved)
 }
 

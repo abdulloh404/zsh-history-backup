@@ -41,6 +41,11 @@ enum Command {
 struct BackupArgs {
     #[arg(long, value_parser = parse_name, help = "Optional safe label for the backup")]
     name: Option<String>,
+    #[arg(
+        long,
+        help = "Use the automatic backup directory; intended for the systemd service"
+    )]
+    automatic: bool,
 }
 
 #[derive(Args)]
@@ -77,7 +82,7 @@ fn main() -> ExitCode {
 fn run() -> Result<()> {
     let cli = Cli::parse();
     let paths = AppPaths::discover(cli.config.as_deref())?;
-    paths.ensure_layout()?;
+    paths.ensure_state_layout()?;
 
     let operation = cli.command.operation_name();
     let result = execute(cli.command, &paths);
@@ -117,7 +122,7 @@ fn run() -> Result<()> {
 
 fn execute(command: Command, paths: &AppPaths) -> Result<ArchiveReport> {
     match command {
-        Command::Backup(args) => archive::backup(paths, args.name.as_deref()),
+        Command::Backup(args) => archive::backup(paths, args.name.as_deref(), args.automatic),
         Command::Export(args) => {
             let target_date = match (args.days_ago, args.date) {
                 (Some(days), None) => Local::now()
@@ -135,7 +140,8 @@ fn execute(command: Command, paths: &AppPaths) -> Result<ArchiveReport> {
 impl Command {
     fn operation_name(&self) -> &'static str {
         match self {
-            Self::Backup(_) => "backup",
+            Self::Backup(args) if args.automatic => "backup-auto",
+            Self::Backup(_) => "backup-manual",
             Self::Export(_) => "export",
         }
     }

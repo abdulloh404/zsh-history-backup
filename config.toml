@@ -1,2 +1,3 @@
 history_file = "~/.zsh_history"
-backup_dir = "backups"
+auto_backup_dir = "~/zsh/backup/auto"
+manual_backup_dir = "~/zsh/backup/manual"

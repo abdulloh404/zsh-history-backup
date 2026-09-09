@@ -54,9 +54,11 @@ impl ArchiveReport {
     }
 }
 
-pub fn backup(paths: &AppPaths, name: Option<&str>) -> Result<ArchiveReport> {
+pub fn backup(paths: &AppPaths, name: Option<&str>, automatic: bool) -> Result<ArchiveReport> {
+    paths.ensure_backup_layout(automatic)?;
+    let backup_dir = paths.backup_dir(automatic);
     let (source, source_bytes) = open_source(&paths.history_file)?;
-    let temp = new_private_temp(&paths.backups_dir)?;
+    let temp = new_private_temp(backup_dir)?;
     let mut encoder = GzEncoder::new(temp, Compression::default());
     let mut reader = BufReader::new(source.take(source_bytes));
     let copied = std::io::copy(&mut reader, &mut encoder)
@@ -75,7 +77,7 @@ pub fn backup(paths: &AppPaths, name: Option<&str>) -> Result<ArchiveReport> {
         Some(name) => format!("{timestamp}_{name}"),
         None => format!("{timestamp}_full"),
     };
-    let output = persist_unique(temp, &paths.backups_dir, &stem)?;
+    let output = persist_unique(temp, backup_dir, &stem)?;
 
     Ok(ArchiveReport::Backup {
         output,
@@ -88,8 +90,10 @@ pub fn export_date(
     target_date: NaiveDate,
     name: Option<&str>,
 ) -> Result<ArchiveReport> {
+    paths.ensure_backup_layout(false)?;
+    let backup_dir = paths.backup_dir(false);
     let (source, source_bytes) = open_source(&paths.history_file)?;
-    let temp = new_private_temp(&paths.exports_dir)?;
+    let temp = new_private_temp(backup_dir)?;
     let mut encoder = GzEncoder::new(temp, Compression::default());
     let mut reader = BufReader::new(source.take(source_bytes));
     let mut line = Vec::new();
@@ -144,7 +148,7 @@ pub fn export_date(
         Some(name) => format!("{target_date}_{name}"),
         None => format!("{target_date}_history"),
     };
-    let output = persist_unique(temp, &paths.exports_dir, &stem)?;
+    let output = persist_unique(temp, backup_dir, &stem)?;
 
     Ok(ArchiveReport::Export {
         output,

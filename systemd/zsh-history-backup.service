@@ -4,11 +4,12 @@ ConditionPathExists=%h/.zsh_history
 
 [Service]
 Type=oneshot
-ExecStart=%h/.local/bin/zsh-history-backup backup
+ExecStart=%h/.local/bin/zsh-history-backup backup --automatic
 UMask=0077
 NoNewPrivileges=yes
 PrivateTmp=yes
 ProtectSystem=strict
 ProtectHome=read-only
+ReadWritePaths=%h/zsh/backup/auto
 StateDirectory=zsh-history-backup
 StateDirectoryMode=0700
