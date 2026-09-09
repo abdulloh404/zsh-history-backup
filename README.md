@@ -1,6 +1,6 @@
 # zsh-history-backup
 
-CLI ภาษา Rust สำหรับสำรอง `~/.zsh_history` โดยเปิดต้นฉบับแบบ read-only เท่านั้น ผลลัพธ์เป็น gzip, ไม่เขียนทับไฟล์ backup เดิม และใช้ timestamp จากรูปแบบ `EXTENDED_HISTORY` เมื่อต้อง export ประวัติของวันใดวันหนึ่ง
+CLI ภาษา Rust สำหรับสำรอง Zsh history โดยเปิดต้นฉบับแบบ read-only เท่านั้น ผลลัพธ์เป็น gzip, ไม่เขียนทับไฟล์ backup เดิม และใช้ timestamp จากรูปแบบ `EXTENDED_HISTORY` เมื่อต้อง export ประวัติของวันใดวันหนึ่ง
 
 ## คำสั่ง
 
@@ -23,9 +23,32 @@ zsh-history-backup export --date 2026-09-06 --name sunday
 
 ชื่อที่ส่งผ่าน `--name` รองรับตัวอักษร Unicode, ตัวเลข, ช่องว่าง, จุด, `-` และ `_` โดยช่องว่างจะถูกเปลี่ยนเป็น `-` และไม่อนุญาต path separator หรือชื่อซ่อน
 
-## ตำแหน่งข้อมูล
+## Config
 
-ค่าปริยายเป็นไปตาม XDG State Directory:
+config แยกจาก backup และ log ตามมาตรฐาน XDG:
+
+```text
+~/.config/zsh-history-backup/config.toml
+```
+
+ไฟล์นี้เป็น optional หากไม่มีโปรแกรมจะใช้ path ปริยายตามเดิม ตัวอย่างอยู่ที่ `config.toml`:
+
+```toml
+history_file = "~/.zsh_history"
+backup_dir = "backups"
+```
+
+ติดตั้ง config ตัวอย่างเมื่อยังไม่มี config เดิม:
+
+```console
+install -Dm600 config.toml "$HOME/.config/zsh-history-backup/config.toml"
+```
+
+สามารถเลือกไฟล์อื่นเฉพาะครั้งได้ด้วย `--config /absolute/path/config.toml` เมื่อระบุ `--config` ไฟล์นั้นต้องมีอยู่และอ่านได้ `history_file` ต้องเป็น absolute path หรือเริ่มด้วย `~/` ส่วน `backup_dir` เป็น path ภายใน XDG State ของแอป เช่น `backups` หรือ `daily/backups` โปรแกรมจะสร้างโฟลเดอร์ให้และตั้ง permission เป็น `0700`
+
+## ตำแหน่ง backup และ log
+
+ค่าปริยายของ backup เป็นไปตาม `backup_dir` ภายใน XDG State Directory:
 
 ```text
 ~/.local/state/zsh-history-backup/
@@ -34,7 +57,7 @@ zsh-history-backup export --date 2026-09-06 --name sunday
 └── logs/backup.log
 ```
 
-ถ้ากำหนด `XDG_STATE_HOME` เป็น absolute path โปรแกรมจะใช้ตำแหน่งนั้นแทน ไดเรกทอรีตั้ง permission เป็น `0700` ส่วน archive และ log เป็น private file โปรแกรมไม่บันทึกเนื้อหาคำสั่งลง log
+config ไม่ถูกเก็บในตำแหน่งนี้ ถ้ากำหนด `XDG_STATE_HOME` เป็น absolute path โปรแกรมจะใช้ตำแหน่งนั้นแทน ไดเรกทอรีตั้ง permission เป็น `0700` ส่วน archive และ log เป็น private file โปรแกรมไม่บันทึกเนื้อหาคำสั่งลง log
 
 ## Build และทดลองแบบ manual
 
@@ -70,7 +93,7 @@ systemctl --user disable --now zsh-history-backup.timer
 
 ## ขอบเขตความปลอดภัย
 
-- เปิด `~/.zsh_history` ด้วยสิทธิ์ read-only และไม่แก้ไขหรือลบต้นฉบับ
+- เปิด history file ที่กำหนดด้วยสิทธิ์ read-only และไม่แก้ไขหรือลบต้นฉบับ
 - อ่านตามขนาดไฟล์ ณ ตอนเปิด หากไฟล์ถูก truncate ระหว่างอ่าน จะไม่ publish archive ที่ไม่สมบูรณ์
 - สร้างไฟล์ผ่าน temporary file แล้ว publish แบบ no-clobber จึงไม่เขียนทับ archive เดิม
 - export เก็บ entry แบบ raw bytes จึงไม่บังคับให้ history ทั้งไฟล์เป็น UTF-8

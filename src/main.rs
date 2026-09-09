@@ -1,4 +1,5 @@
 mod archive;
+mod config;
 mod logging;
 mod paths;
 
@@ -7,6 +8,7 @@ use archive::ArchiveReport;
 use chrono::{Days, Local, NaiveDate};
 use clap::{Args, Parser, Subcommand};
 use paths::AppPaths;
+use std::path::PathBuf;
 use std::process::ExitCode;
 
 #[derive(Parser)]
@@ -16,13 +18,20 @@ use std::process::ExitCode;
     about = "Back up and export Zsh EXTENDED_HISTORY without modifying the source"
 )]
 struct Cli {
+    #[arg(
+        long,
+        global = true,
+        value_name = "PATH",
+        help = "Config file path (default: $XDG_CONFIG_HOME/zsh-history-backup/config.toml)"
+    )]
+    config: Option<PathBuf>,
     #[command(subcommand)]
     command: Command,
 }
 
 #[derive(Subcommand)]
 enum Command {
-    #[command(about = "Create a complete gzip snapshot of ~/.zsh_history")]
+    #[command(about = "Create a complete gzip snapshot of the configured history file")]
     Backup(BackupArgs),
     #[command(about = "Export entries from one local calendar date as gzip")]
     Export(ExportArgs),
@@ -67,7 +76,7 @@ fn main() -> ExitCode {
 
 fn run() -> Result<()> {
     let cli = Cli::parse();
-    let paths = AppPaths::discover()?;
+    let paths = AppPaths::discover(cli.config.as_deref())?;
     paths.ensure_layout()?;
 
     let operation = cli.command.operation_name();

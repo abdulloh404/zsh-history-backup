@@ -1,0 +1,2 @@
+history_file = "~/.zsh_history"
+backup_dir = "backups"
