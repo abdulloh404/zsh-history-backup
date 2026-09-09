@@ -1,0 +1,11 @@
+[Unit]
+Description=Back up Zsh command history every day at midnight
+
+[Timer]
+OnCalendar=*-*-* 00:00:00
+AccuracySec=1s
+Persistent=true
+Unit=zsh-history-backup.service
+
+[Install]
+WantedBy=timers.target
