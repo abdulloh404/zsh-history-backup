@@ -74,18 +74,19 @@ make build
 
 โปรเจกต์มี unit ที่เรียก backup ทุกวันเวลา `00:00:00` ตาม timezone ท้องถิ่น และมี `Persistent=true` เพื่อให้ systemd เรียกงานที่พลาดไประหว่างปิดเครื่องหลังกลับมาเปิดเครื่องอีกครั้ง
 
-ติดตั้งโดยยังไม่เปิด timer:
+ติดตั้ง, reload systemd user manager และ enable/start timer ทันที:
 
 ```console
 make install
 ```
 
-`make install` จะไม่เขียนทับ config ที่มีอยู่ เปิด timer และตรวจสถานะด้วย:
+`make install` จะไม่เขียนทับ config ที่มีอยู่ และจะเรียก `systemctl --user daemon-reload` ตามด้วย `enable --now` ให้ ตรวจสถานะด้วย:
 
 ```console
-make enable-timer
 make status
 ```
+
+`make enable-timer` เป็น alias ของ `make install`
 
 คำสั่งที่ Makefile เรียกภายในมีดังนี้:
 

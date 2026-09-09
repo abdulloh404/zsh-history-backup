@@ -19,7 +19,8 @@ build:
 	$(CARGO) build --release --locked
 
 install: install-binary install-config install-systemd
-	@echo "Installed. Run 'make enable-timer' to enable the midnight timer."
+	$(SYSTEMCTL) --user enable --now $(BINARY).timer
+	@echo "Installed and enabled $(BINARY).timer."
 
 install-binary: build
 	$(INSTALL) -Dm755 target/release/$(BINARY) "$(BINDIR)/$(BINARY)"
@@ -43,7 +44,6 @@ install-systemd: install-dirs
 	$(SYSTEMCTL) --user daemon-reload
 
 enable-timer: install
-	$(SYSTEMCTL) --user enable --now $(BINARY).timer
 
 disable-timer:
 	$(SYSTEMCTL) --user disable --now $(BINARY).timer
