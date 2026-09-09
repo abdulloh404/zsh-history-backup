@@ -66,13 +66,28 @@ install -Dm600 config.toml "$HOME/.config/zsh-history-backup/config.toml"
 ## Build และทดลองแบบ manual
 
 ```console
-cargo build --release --locked
+make build
 ./target/release/zsh-history-backup backup --name first-manual-run
 ```
 
 ## ติดตั้ง systemd user timer
 
 โปรเจกต์มี unit ที่เรียก backup ทุกวันเวลา `00:00:00` ตาม timezone ท้องถิ่น และมี `Persistent=true` เพื่อให้ systemd เรียกงานที่พลาดไประหว่างปิดเครื่องหลังกลับมาเปิดเครื่องอีกครั้ง
+
+ติดตั้งโดยยังไม่เปิด timer:
+
+```console
+make install
+```
+
+`make install` จะไม่เขียนทับ config ที่มีอยู่ เปิด timer และตรวจสถานะด้วย:
+
+```console
+make enable-timer
+make status
+```
+
+คำสั่งที่ Makefile เรียกภายในมีดังนี้:
 
 ```console
 install -d -m700 "$HOME/zsh/backup/auto"
@@ -94,7 +109,7 @@ journalctl --user -u zsh-history-backup.service
 การถอน timer ไม่กระทบ backup ที่มีอยู่:
 
 ```console
-systemctl --user disable --now zsh-history-backup.timer
+make disable-timer
 ```
 
 ## ขอบเขตความปลอดภัย
